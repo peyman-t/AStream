@@ -1,56 +1,117 @@
-AStream: A rate adaptation model for DASH
-==================
-AStream is a Python based emulated video player to evalutae the perfomance of the DASH bitrate adaptaion algorithms.
+# AStream: Enhanced DASH Client with PEP Support
 
+AStream is a Python-based emulated video player designed to evaluate the performance of DASH (Dynamic Adaptive Streaming over HTTP) bitrate adaptation algorithms. It now includes support for Performance Enhancing Proxy (PEP) to optimize video streaming performance.
 
-Rate Adaptatation Algorithms Supported
---------------------------------------
-1. Basic Adaptation
-2. Segment Aware Rate Adaptation (SARA): Our algorithm
-3. Buffer-Based Rate Adaptation (Netflix): This is based on the algorithm presented in the paper. 
-   Te-Yuan Huang, Ramesh Johari, Nick McKeown, Matthew Trunnell, and Mark Watson. 2014. A buffer-based approach to rate adaptation: evidence from a large video streaming service. In Proceedings of the 2014 ACM conference on SIGCOMM (SIGCOMM '14). ACM, New York, NY, USA, 187-198. DOI=10.1145/2619239.2626296 http://doi.acm.org/10.1145/2619239.2626296
+## Features
 
-Logs
-----
+### Rate Adaptation Algorithms
+1. **Basic Adaptation (BASIC)**: A simple throughput-based adaptation
+2. **Segment Aware Rate Adaptation (SARA)**: An advanced algorithm considering segment sizes
+3. **Netflix Buffer-Based Rate Adaptation**: Implementation based on Netflix's algorithm [1]
 
-Buffer Logs:
+### Performance Enhancement
+- **PEP Support**: Integrated Performance Enhancing Proxy for improved streaming
+- **TCP Optimizations**: Advanced TCP configurations for better throughput
+- **Configurable Buffer Sizes**: Adjustable TCP buffer sizes for performance tuning
 
-1. Epoch time
-2. Current Playback Time
-3. Current Buffer Size (in segments)
-4. Current Playback State
+## Requirements
+- Python 3.6+
+- Required packages:
+  ```
+  pip install urllib3 logging threading ssl
+  ```
 
-Playback Logs:
-
-1. Epoch time
-2. Playback time
-3. Segment Number
-4. Segment Size
-5. Playback Bitrate 
-6. Segment Size 
-7. Segment Duration
-8. Weighted harmonic mean average download rate
-
-Sample Run
-----------
-```
-python dist/client/dash_client.py -m <URL TO MPD> -p <PlaybackType> 
+## Installation
+```bash
+git clone <repository-url>
+cd AStream
 ```
 
-Command Line options
---------------------
-```
-dash_client.py [-h] [-m MPD] [-l] [-p PLAYBACK] [-n SEGMENT_LIMIT] [-d]
+## Usage
 
-Process Client parameters
+### Basic Usage
+```bash
+python dash_client.py -m <MPD_URL> -p <PLAYBACK_TYPE>
+```
+
+### With PEP Support
+```bash
+python dash_client.py -m <MPD_URL> -p <PLAYBACK_TYPE> --use-pep --pep-host localhost --pep-port 8888
+```
+
+### Command Line Options
+```
+dash_client.py [-h] [-m MPD] [-l] [-p PLAYBACK] [-n SEGMENT_LIMIT] [-d] 
+               [--use-pep] [--pep-host PEP_HOST] [--pep-port PEP_PORT] 
+               [--buffer-size BUFFER_SIZE]
 
 optional arguments:
-  -h, --help            show this help message and exit
-  -m MPD, --MPD MPD     Url to the MPD File
-  -l, --LIST            List all the representations and quit
-  -p PLAYBACK, --PLAYBACK PLAYBACK
-                        Playback type ('basic', 'sara', 'netflix', or 'all')
-  -n SEGMENT_LIMIT, --SEGMENT_LIMIT SEGMENT_LIMIT
-                        The Segment number limit
-  -d, --DOWNLOAD        Keep the video files after playback
+  -h, --help            show help message and exit
+  -m MPD, --MPD MPD     URL to the MPD File
+  -l, --LIST            List all representations and quit
+  -p PLAYBACK           Playback type ('basic', 'sara', 'netflix', or 'all')
+  -n SEGMENT_LIMIT      Segment number limit
+  -d, --DOWNLOAD        Keep video files after playback
+  --use-pep            Enable PEP support
+  --pep-host           PEP proxy host (default: localhost)
+  --pep-port           PEP proxy port (default: 8888)
+  --buffer-size        TCP buffer size in bytes (default: 2MB)
 ```
+
+## Logging
+The system provides comprehensive logging for analysis:
+
+### Buffer Logs
+- Epoch time
+- Current playback time
+- Buffer size (in segments)
+- Playback state
+
+### Playback Logs
+- Epoch time
+- Playback time
+- Segment information (number, size, duration)
+- Bitrate details
+- Download rates
+- TCP metrics (when using PEP)
+
+### PEP Logs
+- Connection establishment
+- TCP optimization parameters
+- Transfer rates
+- Error conditions
+
+## Architecture
+
+### Components
+1. **DASH Client**: Main video player implementation
+2. **PEP Proxy**: Performance enhancement layer
+3. **Rate Adaptation Modules**: Different adaptation algorithms
+4. **Download Manager**: Handles segment retrieval
+5. **Buffer Manager**: Manages playback buffer
+
+### Data Flow
+```
+Client -> PEP Proxy -> CDN
+   ↑         ↑          ↓
+   |         |          |
+   └─────────└──────────┘
+   Optimized Data Flow
+```
+
+## Performance Optimization Tips
+- Enable PEP for high-latency networks
+- Adjust buffer size based on available memory
+- Configure TCP optimizations for your network
+
+## Contributing
+Contributions are welcome! Please follow these steps:
+1. Fork the repository
+2. Create a feature branch
+3. Submit a pull request
+
+## References
+[1] Te-Yuan Huang, et al. "A buffer-based approach to rate adaptation: evidence from a large video streaming service." SIGCOMM '14, 2014.
+
+## License
+MIT License - see LICENSE file for details
