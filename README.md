@@ -31,17 +31,17 @@ cd AStream
 
 ### Basic Usage
 ```bash
-python dash_client.py -m <MPD_URL> -p <PLAYBACK_TYPE>
+python ./dist/client/dash_client.py -m <MPD_URL> -p <PLAYBACK_TYPE>
 ```
 
 ### Running the PEP Proxy
 ```bash
-python proxy.py --listen-host localhost --listen-port 8888 --target-host dash.akamaized.net --target-port 443
+python ./dist/proxy/proxy.py --listen-host localhost --listen-port 8888 --target-host dash.akamaized.net --target-port 443
 ```
 
 ### Running Client with PEP Support
 ```bash
-python dash_client.py -m <MPD_URL> -p <PLAYBACK_TYPE> --use-pep --pep-host localhost --pep-port 8888
+python ./dist/client/dash_client.py -m <MPD_URL> -p <PLAYBACK_TYPE> --use-pep --pep-host localhost --pep-port 8888
 ```
 
 Note: Make sure to start the proxy server before running the client with PEP support.
