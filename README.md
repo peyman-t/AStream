@@ -18,7 +18,7 @@ AStream is a Python-based emulated video player designed to evaluate the perform
 - Python 3.6+
 - Required packages:
   ```
-  pip install urllib3 logging threading ssl
+  pip install urllib3 threading ssl
   ```
 
 ## Installation
