@@ -1,0 +1,2 @@
+cd into AStream
+python ./dist/client/dash_client.py -m http://{server_ip_address:port}/{path_to_manifest}/manifest.mpd -p basic --use-concurrent
