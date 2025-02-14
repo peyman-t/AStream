@@ -117,9 +117,11 @@ class DASHDownloader:
                             
                         current_time = time.time()
                         segment_size += len(segment_data)
+
+                        log_frequency = 0.1 # seconds after which the throughput will be logged
                         
                         # Log intermediate rates every second
-                        if current_time - last_log_time >= 1.0:
+                        if current_time - last_log_time >= log_frequency: # 1.0:
                             time_delta = current_time - last_log_time
                             size_delta = segment_size - last_size
                             current_rate_bps = (size_delta * 8) / time_delta

@@ -185,6 +185,7 @@ def get_url_list(media_object, segment_duration, playback_duration, bitrate):
     """
     try:
         # Map bitrates to their representation IDs
+        '''
         BITRATE_TO_ID = {
             3134488: "bbb_30fps_1024x576_2500k",
             4952892: "bbb_30fps_1280x720_4000k", 
@@ -197,6 +198,16 @@ def get_url_list(media_object, segment_duration, playback_duration, bitrate):
             1883700: "bbb_30fps_768x432_1500k",
             14931538: "bbb_30fps_3840x2160_12000k"
         }
+        '''
+        # Hardcoding bitrates to represenations ID (?)
+        BITRATE_TO_ID = {
+            145124: "1",
+            1598543: "2", 
+            3396625: "3",
+            5794057: "4",
+            8091565: "5",
+            16782306: "6"
+        }
 
         if not hasattr(media_object, 'base_url_path'):
             config_dash.LOG.error("No base URL path set in media object")
@@ -207,9 +218,10 @@ def get_url_list(media_object, segment_duration, playback_duration, bitrate):
             config_dash.LOG.error(f"No representation ID found for bitrate {bitrate}")
             return media_object
 
-        # Set initialization segment URL using template pattern
-        init_template = "$RepresentationID$/$RepresentationID$_0.m4v"
-        media_template = "$RepresentationID$/$RepresentationID$_$Number$.m4v"
+        # Set initialization segment URL using template pattern (It would be better to parse these directly from the MPD)
+        init_template = media_object.initialization # "$RepresentationID$/$RepresentationID$_.mp4"
+        media_template = media_object.base_url # "$RepresentationID$/segment_$Number$.m4s"
+        segment_number_format = '03d'  # Format as a 4-digit number with leading zeros
 
         # Replace template variables for initialization
         media_object.initialization = init_template.replace("$RepresentationID$", representation_id)
@@ -230,7 +242,16 @@ def get_url_list(media_object, segment_duration, playback_duration, bitrate):
         media_object.url_list = []
         for i in range(media_object.start, media_object.start + num_segments):
             segment_url = media_template.replace("$RepresentationID$", representation_id)
-            segment_url = segment_url.replace("$Number$", str(i))
+            # Extract the format specifier inside $Number...$
+            match = re.search(r"\$Number(%\d*d)\$", segment_url)
+            if not match:
+                segment_url = segment_url.replace("$Number$", f"{i:{segment_number_format}}")  # Use standard numbering
+                # raise ValueError("No valid $Number...$ format found in the template")
+            else:
+                format_specifier = match.group(1)  # Extracted format specifier, e.g., "%03d"
+                # Replace $Number...$ with the formatted number
+                formatted_number = format_specifier % i
+                segment_url = re.sub(r"\$Number%.*?\$", formatted_number, segment_url)
             full_url = media_object.base_url_path + segment_url
             media_object.url_list.append(full_url)
 
@@ -337,38 +358,23 @@ def read_mpd(mpd_file: str, dashplayback, mpd_url: str) -> Tuple[Optional[object
         
         # Find video adaptation set
         for adaptation_set in period.findall('.//dash:AdaptationSet', ns):
-            mime_type = adaptation_set.get('mimeType', '')
-            content_type = adaptation_set.get('contentType', '')
-            
-            if 'video' in mime_type or content_type == 'video':
-                # Get segment template
-                segment_template = adaptation_set.find('.//dash:SegmentTemplate', ns)
-                if segment_template is not None:
-                    duration_str = segment_template.get('duration')
-                    timescale_str = segment_template.get('timescale', '1')
-                    
-                    if duration_str:
-                        try:
-                            duration = float(duration_str)
-                            timescale = float(timescale_str)
-                            video_segment_duration = duration / timescale
-                            config_dash.LOG.info(f"Found segment duration: {video_segment_duration}s")
-                        except (ValueError, TypeError) as e:
-                            config_dash.LOG.error(f"Error calculating segment duration: {e}")
-                
-                # Process representations
-                for representation in adaptation_set.findall('.//dash:Representation', ns):
+            # Process representations
+            for representation in adaptation_set.findall('.//dash:Representation', ns):
+                mime_type = representation.get('mimeType', '')
+                content_type = representation.get('contentType', '')
+
+                if 'video' in mime_type or content_type == 'video':
                     try:
                         bandwidth = int(representation.get('bandwidth', '0'))
                         if bandwidth == 0:
                             continue
-                            
+                        
                         if not hasattr(config_dash.JSON_HANDLE, 'video_metadata'):
                             config_dash.JSON_HANDLE['video_metadata'] = {'available_bitrates': []}
-                            
+                        
                         if bandwidth not in config_dash.JSON_HANDLE["video_metadata"]["available_bitrates"]:
                             config_dash.JSON_HANDLE["video_metadata"]["available_bitrates"].append(bandwidth)
-                            
+                        
                         # Create MediaObject for this bandwidth
                         dashplayback.video[bandwidth] = MediaObject()
                         media_object = dashplayback.video[bandwidth]
@@ -376,8 +382,23 @@ def read_mpd(mpd_file: str, dashplayback, mpd_url: str) -> Tuple[Optional[object
                         # Store base URL path
                         media_object.base_url_path = base_url_path
                         
-                        # Set segment template info if available
+                        # Get segment template for this representation
+                        segment_template = representation.find('.//dash:SegmentTemplate', ns)
                         if segment_template is not None:
+                            duration_str = segment_template.get('duration')
+                            timescale_str = segment_template.get('timescale', '1')
+                            video_segment_duration = None
+                            
+                            if duration_str:
+                                try:
+                                    duration = float(duration_str)
+                                    timescale = float(timescale_str)
+                                    video_segment_duration = duration / timescale
+                                    config_dash.LOG.info(f"Found segment duration: {video_segment_duration}s")
+                                except (ValueError, TypeError) as e:
+                                    config_dash.LOG.error(f"Error calculating segment duration: {e}")
+                            
+                            # Set segment template info if available
                             media_object.start = int(segment_template.get('startNumber', '1'))
                             media_object.timescale = float(timescale_str)
                             media_object.segment_duration = video_segment_duration
@@ -386,17 +407,23 @@ def read_mpd(mpd_file: str, dashplayback, mpd_url: str) -> Tuple[Optional[object
                             media_template = segment_template.get('media', '')
                             if media_template:
                                 media_object.base_url = media_template
-                                
+                            
                             # Get initialization template
                             init_template = segment_template.get('initialization', '')
                             if init_template:
                                 media_object.initialization = init_template
-                                
+
+                        # Ensure video metadata for the representation itself
+                        media_object.mime_type = representation.get('mimeType', '')
+                        media_object.codecs = representation.get('codecs', '')
+                        media_object.width = int(representation.get('width', '0'))
+                        media_object.height = int(representation.get('height', '0'))
+                        
                     except (ValueError, TypeError) as e:
                         config_dash.LOG.error(f"Error processing representation: {e}")
                         continue
-                        
-                break  # Found video adaptation set
+
+            break  # Found video adaptation set
 
         if not dashplayback.video:
             config_dash.LOG.error("No video representations found")

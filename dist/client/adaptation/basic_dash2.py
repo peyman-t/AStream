@@ -4,7 +4,7 @@ import config_dash
 
 
 def basic_dash2(segment_number, bitrates, average_dwn_time,
-                recent_download_sizes, previous_segment_times, current_bitrate):
+                recent_download_sizes, previous_segment_times, current_bitrate, parallel_dwn_rate=None):
     """
     Module to predict the next_bitrate using the basic_dash algorithm. Selects the bitrate that is one lower than the
     current network capacity.
@@ -12,6 +12,7 @@ def basic_dash2(segment_number, bitrates, average_dwn_time,
     :param bitrates: A tuple/list of available bitrates
     :param average_dwn_time: Average download time observed so far
     :param segment_download_time:  Time taken to download the current segment
+    :param parallel_dwn_rate: Rate for download of the last parallel segment. Used for concurrent downloads. [Optional]
     :return: next_rate : Bitrate for the next segment
     :return: updated_dwn_time: Updated average download time
     """
@@ -30,6 +31,13 @@ def basic_dash2(segment_number, bitrates, average_dwn_time,
                                                                                                      average_dwn_time))
     # Calculate the running download_rate in Kbps for the most recent segments
     download_rate = sum(recent_download_sizes) * 8 / (updated_dwn_time * len(previous_segment_times))
+
+    # Concurrent downloads
+    if parallel_dwn_rate:
+        download_rate = parallel_dwn_rate
+        config_dash.LOG.debug("Concurrent download update for current segment {} is {}. Before it was {}".format(segment_number,
+                                                                                                     parallel_dwn_rate,
+                                                                                                     average_dwn_time))
     bitrates = [float(i) for i in bitrates]
     bitrates.sort()
     next_rate = bitrates[0]
