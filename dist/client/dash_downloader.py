@@ -29,7 +29,8 @@ class DASHDownloader:
             self.pep_downloader = PEPDownloader(
                 max_buffer_size=max_buffer_size,
                 pep_host=pep_host,
-                pep_port=pep_port
+                pep_port=pep_port,
+                download_chunk=download_chunk
             )
 
     def _prepare_download(self, segment_url: str, dash_folder: str) -> Tuple[str, str]:
@@ -187,7 +188,8 @@ class DASHDownloader:
 def init_downloader(mode: str = "direct", 
                   pep_host: str = None, 
                   pep_port: int = None,
-                  max_buffer_size: int = 1024*1024) -> DASHDownloader:
+                  max_buffer_size: int = 1024*1024,
+                  download_chunk: int = 1024*1024) -> DASHDownloader:
     """Initialize downloader with specified mode and proxy settings"""
     try:
         download_mode = DownloadMode(mode.lower())
@@ -195,7 +197,8 @@ def init_downloader(mode: str = "direct",
             mode=download_mode, 
             pep_host=pep_host,
             pep_port=pep_port,
-            max_buffer_size=max_buffer_size
+            max_buffer_size=max_buffer_size,
+            download_chunk=download_chunk
         )
     except ValueError:
         config_dash.LOG.warning(f"Invalid mode '{mode}', falling back to direct download")

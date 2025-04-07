@@ -450,7 +450,8 @@ def start_playback_smart(dp_object, domain, playback_type=None, download=False,
             mode="pep",  # Using PEP mode for TCP-level proxy
             pep_host=pep_host,
             pep_port=pep_port,
-            max_buffer_size=buffer_size
+            max_buffer_size=buffer_size,
+            download_chunk=16*1024*1024
         )
     else:
         downloader = init_downloader(mode="direct")

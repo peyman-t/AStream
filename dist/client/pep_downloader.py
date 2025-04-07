@@ -13,14 +13,15 @@ class PEPDownloader:
     """Performance Enhancing Proxy behavior for DASH segment downloads"""
     def __init__(self, max_buffer_size: int = 1024*1024,  # 1MB default
                  pep_host: str = None,
-                 pep_port: int = None):
+                 pep_port: int = None,
+                 download_chunk: int = 8192):
         self.max_buffer_size = max_buffer_size
         self.pep_host = pep_host
         self.pep_port = pep_port
         self.pending_requests = queue.Queue()
         self.active_downloads = {}
         self.lock = threading.Lock()
-        self.download_chunk = 8192  # 8KB chunks
+        self.download_chunk = download_chunk  
         
     def configure_socket(self, sock: socket.socket) -> None:
         """Configure socket buffer sizes and TCP options"""
